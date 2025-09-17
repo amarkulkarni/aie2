@@ -1,5 +1,105 @@
 import os
 from typing import List
+import PyPDF2
+import pdfplumber
+import fitz  # PyMuPDF
+
+
+class PDFLoader:
+    """A class to load and extract text from PDF files using multiple methods."""
+    
+    def __init__(self, path: str, method: str = "pdfplumber"):
+        """
+        Initialize PDF loader.
+        
+        Args:
+            path: Path to PDF file or directory containing PDF files
+            method: Method to use for PDF extraction ("pdfplumber", "pymupdf", "pypdf2")
+        """
+        self.documents = []
+        self.path = path
+        self.method = method
+        self.supported_methods = ["pdfplumber", "pymupdf", "pypdf2"]
+        
+        if method not in self.supported_methods:
+            raise ValueError(f"Method must be one of {self.supported_methods}")
+
+    def load(self):
+        """Load PDF files from path."""
+        if os.path.isdir(self.path):
+            self.load_directory()
+        elif os.path.isfile(self.path) and self.path.lower().endswith(".pdf"):
+            self.load_file()
+        else:
+            raise ValueError(
+                "Provided path is neither a valid directory nor a .pdf file."
+            )
+
+    def load_file(self):
+        """Load a single PDF file."""
+        try:
+            text = self._extract_text(self.path)
+            if text.strip():  # Only add non-empty text
+                self.documents.append(text)
+        except Exception as e:
+            print(f"Error loading PDF {self.path}: {e}")
+
+    def load_directory(self):
+        """Load all PDF files from a directory."""
+        for root, _, files in os.walk(self.path):
+            for file in files:
+                if file.lower().endswith(".pdf"):
+                    file_path = os.path.join(root, file)
+                    try:
+                        text = self._extract_text(file_path)
+                        if text.strip():  # Only add non-empty text
+                            self.documents.append(text)
+                    except Exception as e:
+                        print(f"Error loading PDF {file_path}: {e}")
+
+    def _extract_text(self, file_path: str) -> str:
+        """Extract text from PDF using the specified method."""
+        if self.method == "pdfplumber":
+            return self._extract_with_pdfplumber(file_path)
+        elif self.method == "pymupdf":
+            return self._extract_with_pymupdf(file_path)
+        elif self.method == "pypdf2":
+            return self._extract_with_pypdf2(file_path)
+
+    def _extract_with_pdfplumber(self, file_path: str) -> str:
+        """Extract text using pdfplumber (best for tables and layout)."""
+        text = ""
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        return text
+
+    def _extract_with_pymupdf(self, file_path: str) -> str:
+        """Extract text using PyMuPDF (fastest and most reliable)."""
+        text = ""
+        doc = fitz.open(file_path)
+        for page_num in range(doc.page_count):
+            page = doc[page_num]
+            text += page.get_text() + "\n"
+        doc.close()
+        return text
+
+    def _extract_with_pypdf2(self, file_path: str) -> str:
+        """Extract text using PyPDF2 (basic extraction)."""
+        text = ""
+        with open(file_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                text += page.extract_text() + "\n"
+        return text
+
+    def load_documents(self):
+        """Load documents and return them."""
+        self.load()
+        return self.documents
 
 
 class TextFileLoader:
@@ -11,11 +111,20 @@ class TextFileLoader:
     def load(self):
         if os.path.isdir(self.path):
             self.load_directory()
-        elif os.path.isfile(self.path) and self.path.endswith(".txt"):
-            self.load_file()
+        elif os.path.isfile(self.path):
+            if self.path.lower().endswith(".txt"):
+                self.load_file()
+            elif self.path.lower().endswith(".pdf"):
+                # Use PDFLoader for PDF files
+                pdf_loader = PDFLoader(self.path)
+                self.documents = pdf_loader.load_documents()
+            else:
+                raise ValueError(
+                    "File must be either .txt or .pdf format."
+                )
         else:
             raise ValueError(
-                "Provided path is neither a valid directory nor a .txt file."
+                "Provided path is neither a valid directory nor a supported file."
             )
 
     def load_file(self):
@@ -25,11 +134,17 @@ class TextFileLoader:
     def load_directory(self):
         for root, _, files in os.walk(self.path):
             for file in files:
-                if file.endswith(".txt"):
+                if file.lower().endswith(".txt"):
                     with open(
                         os.path.join(root, file), "r", encoding=self.encoding
                     ) as f:
                         self.documents.append(f.read())
+                elif file.lower().endswith(".pdf"):
+                    # Use PDFLoader for PDF files
+                    file_path = os.path.join(root, file)
+                    pdf_loader = PDFLoader(file_path)
+                    pdf_docs = pdf_loader.load_documents()
+                    self.documents.extend(pdf_docs)
 
     def load_documents(self):
         self.load()
