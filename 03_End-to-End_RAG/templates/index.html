@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Customer Service Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '✈️';
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            font-size: 2rem;
+            opacity: 0.3;
+        }
+
+        .header::after {
+            content: '✈️';
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        .upload-section {
+            padding: 40px;
+            border-right: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .chat-section {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upload-area {
+            border: 3px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: white;
+        }
+
+        .upload-area:hover {
+            border-color: #4f46e5;
+            background: #f8fafc;
+        }
+
+        .upload-area.dragover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .file-types {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .file-types strong {
+            color: #1e40af;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-button {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .upload-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .upload-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9fafb;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #4f46e5;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+
+        .message.system {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+            font-style: italic;
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #4f46e5;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .send-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .send-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-section {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✈️ Airline Customer Service Assistant</h1>
+            <p>Upload airline documents and get instant answers to your questions</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Drop your airline documents here</div>
+                    <div class="upload-subtext">or click to browse files</div>
+                    <div class="file-types">
+                        <strong>Supported formats:</strong> PDF, DOCX, TXT, RTF
+                    </div>
+                    <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.rtf">
+                    <button class="upload-button" id="uploadButton" disabled>Upload Documents</button>
+                </div>
+                <div id="status"></div>
+            </div>
+            
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message system">
+                            Welcome to our Airline Customer Service Assistant! Upload your airline documents (policies, manuals, schedules, etc.) and I'll help answer your questions about flights, bookings, policies, and more.
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Ask about flights, policies, bookings, baggage, or any airline service..." disabled>
+                        <button class="send-button" id="sendButton" disabled>Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const status = document.getElementById('status');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+
+        let isProcessing = false;
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        uploadButton.addEventListener('click', uploadFile);
+
+        // Chat handling
+        sendButton.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        }
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            const allowedTypes = [
+                'application/pdf',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'text/plain',
+                'application/rtf',
+                'text/rtf'
+            ];
+            
+            if (file && allowedTypes.includes(file.type)) {
+                uploadButton.disabled = false;
+                uploadButton.textContent = `Upload ${file.name}`;
+            } else {
+                uploadButton.disabled = true;
+                uploadButton.textContent = 'Upload Documents';
+                showStatus('Please select a valid document file (PDF, DOCX, TXT, or RTF).', 'error');
+            }
+        }
+
+        async function uploadFile() {
+            if (isProcessing) return;
+            
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            isProcessing = true;
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = '<div class="loading"></div> Processing...';
+            showStatus('Uploading and processing PDF...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus(`Document uploaded successfully! Processed ${result.chunks_count} chunks.`, 'success');
+                    enableChat();
+                    addMessage('Document uploaded and processed successfully! I can now help you with questions about airline policies, procedures, schedules, and services.', 'system');
+                } else {
+                    showStatus(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error uploading file: ${error.message}`, 'error');
+            } finally {
+                isProcessing = false;
+                uploadButton.disabled = false;
+                uploadButton.textContent = 'Upload PDF';
+            }
+        }
+
+        function enableChat() {
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            chatInput.focus();
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || isProcessing) return;
+
+            // Add user message to chat
+            addMessage(message, 'user');
+            chatInput.value = '';
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<div class="loading"></div>';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    addMessage(result.response, 'assistant');
+                } else {
+                    addMessage(`Error: ${result.error}`, 'system');
+                }
+            } catch (error) {
+                addMessage(`Error: ${error.message}`, 'system');
+            } finally {
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            }
+        }
+
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.classList.remove('hidden');
+        }
+
+        // Check initial status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/status');
+                const result = await response.json();
+                
+                if (result.pdf_loaded) {
+                    enableChat();
+                    addMessage('Airline documents are already loaded. I can help you with questions about flights, policies, bookings, and services!', 'system');
+                }
+            } catch (error) {
+                console.log('Status check failed:', error);
+            }
+        }
+
+        // Check status on page load
+        checkStatus();
+    </script>
+</body>
+</html>
