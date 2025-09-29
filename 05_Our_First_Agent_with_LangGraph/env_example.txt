@@ -1,0 +1,10 @@
+# OpenAI API Key (Required)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Tavily API Key (Required for web search)
+TAVILY_API_KEY=your_tavily_api_key_here
+
+# Optional: LangSmith API Key (for tracing and monitoring)
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langsmith_api_key_here
+LANGCHAIN_PROJECT=langgraph-agent-chat
