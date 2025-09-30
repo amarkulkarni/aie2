@@ -22,16 +22,26 @@ load_dotenv()
 class AgentState(TypedDict):
     messages: Annotated[List, add_messages]
 
-# Initialize the model
-model = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0.1,
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+# Initialize the model (with error handling)
+def get_model():
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable is not set")
+    return ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0.1,
+        api_key=api_key
+    )
 
-# Initialize tools
-search_tool = TavilySearchResults(api_key=os.getenv("TAVILY_API_KEY"))
-arxiv_tool = ArxivQueryRun(api_wrapper=ArxivAPIWrapper())
+# Initialize tools (with error handling)
+def get_search_tool():
+    api_key = os.getenv("TAVILY_API_KEY")
+    if not api_key:
+        raise ValueError("TAVILY_API_KEY environment variable is not set")
+    return TavilySearchResults(api_key=api_key)
+
+def get_arxiv_tool():
+    return ArxivQueryRun(api_wrapper=ArxivAPIWrapper())
 
 # Wikipedia tool - no API key needed!
 @tool
@@ -86,11 +96,12 @@ def wikipedia_search(query: str) -> str:
     except Exception as e:
         return ""  # Return empty string instead of error message
 
-# Tool belt
-tool_belt = [search_tool, arxiv_tool, wikipedia_search]
+# Tool belt - now with Wikipedia! (lazy initialization)
+def get_tool_belt():
+    return [get_search_tool(), get_arxiv_tool(), wikipedia_search]
 
-# Bind tools to model
-model_with_tools = model.bind_tools(tool_belt)
+def get_model_with_tools():
+    return get_model().bind_tools(get_tool_belt())
 
 def should_continue(state):
     """Determine whether to continue or end"""
@@ -105,7 +116,7 @@ def should_continue(state):
 
 def call_model(state):
     """Call the model"""
-    response = model_with_tools.invoke(state["messages"])
+    response = get_model_with_tools().invoke(state["messages"])
     return {"messages": [response]}
 
 def call_tools(state):
@@ -114,6 +125,7 @@ def call_tools(state):
     tool_calls = last_message.tool_calls
     
     tool_messages = []
+    tool_belt = get_tool_belt()  # Get tools lazily
     for tool_call in tool_calls:
         tool_name = tool_call["name"]
         tool_args = tool_call["args"]
@@ -123,6 +135,23 @@ def call_tools(state):
         for tool in tool_belt:
             # Check if it's a LangChain tool (has name attribute)
             if hasattr(tool, 'name') and tool.name == tool_name:
+                try:
+                    result = tool.invoke(tool_args)
+                    tool_messages.append(ToolMessage(
+                        content=str(result),
+                        tool_call_id=tool_call["id"]
+                    ))
+                    tool_found = True
+                    break
+                except Exception as e:
+                    tool_messages.append(ToolMessage(
+                        content=f"Error calling tool '{tool_name}': {str(e)}",
+                        tool_call_id=tool_call["id"]
+                    ))
+                    tool_found = True
+                    break
+            # Check if it's a custom @tool decorated function
+            elif hasattr(tool, '__name__') and tool.__name__ == tool_name:
                 try:
                     result = tool.invoke(tool_args)
                     tool_messages.append(ToolMessage(
