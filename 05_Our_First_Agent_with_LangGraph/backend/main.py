@@ -19,6 +19,14 @@ sys.path.append(os.path.dirname(__file__))
 
 from agent_setup import create_agent
 
+# Initialize agent with error handling
+try:
+    agent = create_agent()
+    print("✅ Agent initialized successfully")
+except Exception as e:
+    print(f"❌ Agent initialization failed: {str(e)}")
+    agent = None
+
 def format_agent_response(content):
     """Format agent response for better readability"""
     if not content:
@@ -85,8 +93,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize the agent
-agent = None
+# Agent is initialized above with error handling
 
 class ChatMessage(BaseModel):
     message: str
@@ -114,16 +121,7 @@ SUGGESTED_PROMPTS = [
     "How can I get started with AI development?"
 ]
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the agent on startup"""
-    global agent
-    try:
-        agent = create_agent()
-        print("✅ Agent initialized successfully")
-    except Exception as e:
-        print(f"❌ Failed to initialize agent: {e}")
-        raise
+# Agent initialization is handled above
 
 @app.get("/")
 async def root():
@@ -145,7 +143,11 @@ async def chat_with_agent(chat_message: ChatMessage):
     global agent
     
     if not agent:
-        raise HTTPException(status_code=500, detail="Agent not initialized")
+        return AgentResponse(
+            response="❌ Agent is not available. Please check that all required environment variables (OPENAI_API_KEY, TAVILY_API_KEY) are set correctly.",
+            tools_used=[],
+            conversation_ended=True
+        )
     
     try:
         # Prepare the input for the agent
