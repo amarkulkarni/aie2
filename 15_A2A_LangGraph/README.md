@@ -90,6 +90,22 @@ What are the core components of an `AgentCard`?
 ##### ✅ Answer:
 
 <br />
+Core Components:
+name (string): The identifying name of the agent
+description (string): A clear description of what the agent does and its purpose
+url (string): The endpoint URL where the agent can be reached
+version (string): Version identifier for the agent (e.g., "1.0.0")
+default_input_modes (list): Supported content types the agent can accept as input
+default_output_modes (list): Supported content types the agent can produce as output
+capabilities (AgentCapabilities): Features the agent supports:
+streaming: Whether the agent supports streaming responses
+push_notifications: Whether the agent supports push notifications
+skills (list of AgentSkill): Individual capabilities/tools the agent has:
+id: Unique identifier for the skill
+name: Human-readable skill name
+description: What the skill does
+tags: Searchable tags for categorization
+examples: Example queries that would use this skill
 
 ### ❓ Question #2:
 
@@ -98,6 +114,20 @@ Why is A2A (and other such protocols) important in your own words?
 ##### ✅ Answer:
 
 <br /><br />
+The A2A protocol is important because it enables:
+Standardized Agent Communication: Just like APIs standardized how web services communicate, A2A provides a common protocol for AI agents to interact with each other, regardless of their underlying implementation or framework.
+
+Composability & Specialization: Instead of building one massive agent that does everything, you can create specialized agents (e.g., one for web search, one for academic papers, one for document retrieval) and compose them together. Each agent can focus on what it does best.
+
+Discoverability: The AgentCard acts like an OpenAPI spec for agents - clients can discover what capabilities an agent has, what inputs it accepts, and what outputs it produces, without needing to understand its internal implementation.
+
+Interoperability Across Frameworks: Your LangGraph client can talk to a CrewAI server, or an AutoGPT client can talk to a LangChain server - the protocol abstracts away implementation details.
+
+Context Management: The protocol handles multi-turn conversations with proper context preservation (via context_id and task_id), enabling more sophisticated agent-to-agent dialogues.
+
+Scalability: Agents can delegate complex tasks to specialized agents, distribute workload, and avoid reinventing the wheel - similar to how microservices architecture improved scalability in web applications.
+
+In essence, A2A is to AI agents what HTTP/REST is to web services - a universal language that enables an ecosystem of interoperable, composable, specialized agents.
 
 <details>
 <summary>🚧 Advanced Build 🚧 (OPTIONAL - <i>open this section for the requirements</i>)</summary>
