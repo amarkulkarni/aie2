@@ -10,13 +10,20 @@ from typing_extensions import TypedDict, Annotated
 
 from guardrails.hub import (
     RestrictToTopic,
-    DetectJailbreak,
     CompetitorCheck,
     LlmRagEvaluator,
     HallucinationPrompt,
     ProfanityFree,
     GuardrailsPII
 )
+
+# Optional imports - may not be available on all platforms
+try:
+    from guardrails.hub import DetectJailbreak
+    JAILBREAK_AVAILABLE = True
+except ImportError:
+    JAILBREAK_AVAILABLE = False
+    DetectJailbreak = None
 from guardrails import Guard
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph.message import add_messages
@@ -78,10 +85,13 @@ def create_guardrails_guard(
             )
             logger.debug("Topic restriction guard configured")
         
-        # Jailbreak detection
+        # Jailbreak detection (if available)
         if enable_jailbreak_detection:
-            guard = guard.use(DetectJailbreak())
-            logger.debug("Jailbreak detection guard configured")
+            if JAILBREAK_AVAILABLE:
+                guard = guard.use(DetectJailbreak())
+                logger.debug("Jailbreak detection guard configured")
+            else:
+                logger.warning("Jailbreak detection not available (requires torch>=2.4)")
         
         # PII protection
         if enable_pii_protection:
